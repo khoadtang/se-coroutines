@@ -1,52 +1,62 @@
+import com.google.common.util.concurrent.MoreExecutors
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import kotlinx.coroutines.*
+import java.lang.Thread.sleep
+import java.util.concurrent.Executors
+import kotlin.coroutines.CoroutineContext
 
-//fun main() = runBlocking{// this: CoroutineScope
-//
-//    println("Thread ${Thread.currentThread().name} is running for runBlocking")
-//    launch {
-//        println("[1]Thread [${Thread.currentThread().name}] is running ")
-//        delay(1000L)
-//        println("[2]Thread ${Thread.currentThread().name} is running ")
-//        println("World!")
-//    }
-//
-//    launch{
-//        println("[3]Thread ${Thread.currentThread().name} is running ")
-//        delay(2000)
-//        println("[4]Thread ${Thread.currentThread().name} is running ")
-//    }
-////    delay(4000)
-//
-//    println("Hello")
-//}
-
+/*
+    This example don't block main thread, because of using thread pool
+ */
 
 fun main() {
+    val coroutineContextDispatcher: CoroutineContext = Executors.newFixedThreadPool(
+        20,
+        ThreadFactoryBuilder().setNameFormat("thread-%s").build()
+    )
+        .asCoroutineDispatcher()
+    val scope: CoroutineScope = CoroutineScope(coroutineContextDispatcher)
     println("Main Program starts: ${Thread.currentThread().name}")
-
-
-    runBlocking {
-
-        launch(Dispatchers.Unconfined) {
-            println("[Unconfined] coroutine starts: ${Thread.currentThread().name}")
-            delay(5000)
-            // After delaying, this coroutine is executed in background thread instead of main thread.
-            println("[Unconfined] coroutine ends: ${Thread.currentThread().name}")
-        }
-
-        launch(Dispatchers.IO) {
-            println("[IO] coroutine starts: ${Thread.currentThread().name}")
-            delay(5000)
-            // After delaying, this coroutine is executed in background thread instead of main thread.
-            println("[IO] coroutine ends: ${Thread.currentThread().name}")
-        }
-
-        println("[RunBlocking] coroutine scope starts: ${Thread.currentThread().name}")
-        delay(2000)
-        println("[RunBlocking] coroutine scope ends: ${Thread.currentThread().name}")
+    scope.launch(CoroutineName("Scope 1")){
+        // coroutine is executed by multiple threads
+        println("Scope 1 starts: ${Thread.currentThread().name}")
+        delay(4000)
+        // I delayed this coroutines for 4 seconds, but no any reuse thread (thread-2)
+        // This coroutine is executed by new thread (thread-3)
+        println("Scope 1 ends: ${Thread.currentThread().name}")
     }
 
-
+    scope.launch(CoroutineName("Scope 2")) {
+        // coroutine is executed by multiple threads
+        println("Scope 2 starts: ${Thread.currentThread().name}")
+        delay(1000)
+        println("Scope 2 ends: ${Thread.currentThread().name}")
+    }
     println("Main Program ends: ${Thread.currentThread().name}")
+
+
+/*
+    This implement runs only one thread
+*/
+
+//    println("Main Program starts: ${Thread.currentThread().name}")
+//    val executorService = Executors.newFixedThreadPool(
+//        20,
+//        ThreadFactoryBuilder().setNameFormat("push-test-code-revert-%s").build()
+//    )
+//
+//    executorService.execute{
+//        println("Scope 1 starts: ${Thread.currentThread().name}")
+//        sleep(4000)
+//        println("Scope 1 ends: ${Thread.currentThread().name}")
+//    }
+//    executorService.execute{
+//        println("Scope 2 starts: ${Thread.currentThread().name}")
+//        sleep(1000)
+//        println("Scope 2 ends: ${Thread.currentThread().name}")
+//    }
+//    println("Main Program ends: ${Thread.currentThread().name}")
+
+
 }
 
